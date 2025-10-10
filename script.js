@@ -149,6 +149,8 @@ async function saveLastScore(score,won){
   }
 }
 
+let gridContainer, minesLeftEl, timerEl, messageEl, startBtn, diffSelect, playerNameInput, lastScoreEl, leaderboardEl;
+
 document.addEventListener('DOMContentLoaded',()=>{
   const gridContainer=document.getElementById('gridContainer');
   const minesLeftEl=document.getElementById('minesLeft');

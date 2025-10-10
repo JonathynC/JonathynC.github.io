@@ -1,3 +1,48 @@
+<style>
+  .grid {
+    display: grid;
+  }
+
+  .cell {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #555;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    user-select: none;
+    cursor: pointer;
+  }
+
+  .hidden { background-color: #888; }
+  .revealed { background-color: #ddd; }
+  .flag { background-color: #fbb; }
+  .mine { background-color: #f44; }
+</style>
+
+<div>
+  <div>
+    <label>Player: <input id="playerName" /></label>
+    <label>Difficulty: 
+      <select id="difficulty">
+        <option value="beginner">Beginner</option>
+        <option value="intermediate">Intermediate</option>
+        <option value="expert">Expert</option>
+        <option value="custom">Custom</option>
+      </select>
+    </label>
+    <button id="startBtn">Start</button>
+  </div>
+  <div>Mines Left: <span id="minesLeft">0</span></div>
+  <div>Time: <span id="timer">0</span></div>
+  <div id="message"></div>
+  <div id="gridContainer"></div>
+  <div>Last Score: <span id="lastScore"></span></div>
+  <div id="leaderboard"></div>
+</div>
+
+<script>
 const remoteLeaderboardUrl = 'https://minesweeper-leaderboard.glitch.me/scores';
 const presets = {
   beginner: { rows: 9, cols: 9, mines: 10, mult: 1 },
@@ -14,6 +59,9 @@ let timerInterval = null;
 let timeElapsed = 0;
 let started = false;
 let gameOver = false;
+
+// DOM elements
+let gridContainer, minesLeftEl, timerEl, messageEl, startBtn, diffSelect, playerNameInput, lastScoreEl, leaderboardEl;
 
 function setDifficultyFromSelect() {
   const v = diffSelect.value;
@@ -49,11 +97,11 @@ function placeMines(safeR, safeC) {
     for (let c = 0; c < cols; c++) {
       if (grid[r][c].mine) continue;
       let adj = 0;
-      for (let dr=-1; dr<=1; dr++) {
-        for (let dc=-1; dc<=1; dc++) {
+      for (let dr=-1; dr<=1; dr++){
+        for(let dc=-1; dc<=1; dc++){
           const nr=r+dr, nc=c+dc;
-          if (nr<0||nc<0||nr>=rows||nc>=cols) continue;
-          if (grid[nr][nc].mine) adj++;
+          if(nr<0||nc<0||nr>=rows||nc>=cols) continue;
+          if(grid[nr][nc].mine) adj++;
         }
       }
       grid[r][c].adj = adj;
@@ -67,15 +115,16 @@ function renderGrid() {
   gridEl.className = 'grid';
   gridEl.style.gridTemplateColumns = `repeat(${cols},32px)`;
   gridEl.style.gridGap = '2px';
-  for (let r=0;r<rows;r++) {
-    for (let c=0;c<cols;c++) {
+  for (let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
       const cell = document.createElement('div');
       cell.className = 'cell hidden';
-      cell.dataset.r = r; cell.dataset.c = c;
+      cell.dataset.r = r;
+      cell.dataset.c = c;
       cell.addEventListener('click', onCellClick);
       cell.addEventListener('contextmenu', onCellRightClick);
-      let pressTimer = null;
-      cell.addEventListener('touchstart', e => { pressTimer=setTimeout(()=>onCellRightClick(e),600); });
+      let pressTimer=null;
+      cell.addEventListener('touchstart', e=>{ pressTimer=setTimeout(()=>onCellRightClick(e),600); });
       cell.addEventListener('touchend', ()=>{ if(pressTimer) clearTimeout(pressTimer); });
       gridEl.appendChild(cell);
     }
@@ -126,48 +175,52 @@ function checkWin(){ const totalSafe=rows*cols-mines; if(revealedCount>=totalSaf
 function computeScore(){ const diff=diffSelect.value; const mult=presets[diff]?.mult||1; const base=(rows*cols-mines)*50; const timeFactor=Math.max(1,1+(300-timeElapsed)/300); return Math.round(base*mult*timeFactor); }
 
 async function renderRemoteLeaderboard(){
-  const leaderboardEl=document.getElementById('leaderboard');
   try{
-    const res=await fetch(remoteLeaderboardUrl);
+    const res = await fetch(remoteLeaderboardUrl);
     if(!res.ok) throw new Error('Bad response');
-    const data=await res.json();
-    const ol=document.createElement('ol');
-    data.forEach(it=>{ const li=document.createElement('li'); li.textContent=`${it.name} — ${it.score} pts — ${it.difficulty} — ${new Date(it.date).toLocaleString()}`; ol.appendChild(li); });
+    const data = await res.json();
+    const ol = document.createElement('ol');
+    data.forEach(it=>{
+      const li=document.createElement('li');
+      li.textContent=`${it.name} — ${it.score} pts — ${it.difficulty} — ${new Date(it.date).toLocaleString()}`;
+      ol.appendChild(li);
+    });
     leaderboardEl.innerHTML=''; leaderboardEl.appendChild(ol);
-  }catch(e){ leaderboardEl.innerHTML='<div style="color:var(--muted)">Unable to load leaderboard.</div>'; }
+  }catch(e){
+    leaderboardEl.innerHTML='<div style="color:var(--muted)">Unable to load leaderboard.</div>';
+  }
 }
 
 async function saveLastScore(score,won){
   const name=(playerNameInput.value||'Anonymous').slice(0,20);
   const entry={ name, score, time:timeElapsed, rows, cols, mines, difficulty:diffSelect.value, date:new Date().toISOString(), won };
   lastScoreEl.textContent=score+(won?' (win)':' (loss)');
-  if(remoteLeaderboardUrl&&score>0){
+  if(remoteLeaderboardUrl && score>0){
     try{
       await fetch(remoteLeaderboardUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)});
       renderRemoteLeaderboard();
-    }catch(e){ console.error('Failed to post score to remote leaderboard',e); }
+    }catch(e){ console.error('Failed to post score to remote leaderboard', e); }
   }
 }
 
-let gridContainer, minesLeftEl, timerEl, messageEl, startBtn, diffSelect, playerNameInput, lastScoreEl, leaderboardEl;
-
 document.addEventListener('DOMContentLoaded',()=>{
-  gridContainer=document.getElementById('gridContainer');
-  minesLeftEl=document.getElementById('minesLeft');
-  timerEl=document.getElementById('timer');
-  messageEl=document.getElementById('message');
-  startBtn=document.getElementById('startBtn');
-  diffSelect=document.getElementById('difficulty');
-  playerNameInput=document.getElementById('playerName');
-  lastScoreEl=document.getElementById('lastScore');
-  leaderboardEl=document.getElementById('leaderboard');
+  // Assign DOM elements (no const/let)
+  gridContainer = document.getElementById('gridContainer');
+  minesLeftEl = document.getElementById('minesLeft');
+  timerEl = document.getElementById('timer');
+  messageEl = document.getElementById('message');
+  startBtn = document.getElementById('startBtn');
+  diffSelect = document.getElementById('difficulty');
+  playerNameInput = document.getElementById('playerName');
+  lastScoreEl = document.getElementById('lastScore');
+  leaderboardEl = document.getElementById('leaderboard');
 
-  startBtn.addEventListener('click',()=>startGame());
-  diffSelect.addEventListener('change',()=>{ setDifficultyFromSelect(); startGame(); });
-
-   document.addEventListener('keydown',(e)=>{ if(e.key.toLowerCase()==='r') startGame(); });
+  startBtn.addEventListener('click', ()=>startGame());
+  diffSelect.addEventListener('change', ()=>{ setDifficultyFromSelect(); startGame(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key.toLowerCase()==='r') startGame(); });
 
   setDifficultyFromSelect();
   startGame();
   renderRemoteLeaderboard();
 });
+</script>

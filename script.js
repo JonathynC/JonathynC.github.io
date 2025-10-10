@@ -178,4 +178,20 @@ async function saveLastScore(score, won) {
 // --- Initialize ---
 document.addEventListener('DOMContentLoaded', () => {
   gridContainer = document.getElementById('gridContainer');
-  minesLeftEl = document.getElementBy
+  minesLeftEl = document.getElementById('minesLeft');
+  timerEl = document.getElementById('timer');
+  messageEl = document.getElementById('message');
+  startBtn = document.getElementById('startBtn');
+  diffSelect = document.getElementById('difficulty');
+  playerNameInput = document.getElementById('playerName');
+  lastScoreEl = document.getElementById('lastScore');
+  leaderboardEl = document.getElementById('leaderboard');
+
+  startBtn.addEventListener('click', startGame);
+  diffSelect.addEventListener('change', ()=>{ setDifficultyFromSelect(); startGame(); });
+  document.addEventListener('keydown', e=>{ if(e.key.toLowerCase()==='r') startGame(); });
+
+  setDifficultyFromSelect();
+  startGame();
+  renderRemoteLeaderboard();
+});

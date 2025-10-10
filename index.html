@@ -4,17 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Minesweeper</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.18.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.18.0/firebase-database-compat.js"></script>
+
   <script>
-  // Initialize Firebase
-  const firebaseConfig = {
-    databaseURL: "https://lakefront-minesweeper-default-rtdb.firebaseio.com/"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-</script>
-  <link rel="stylesheet" href="style.css">
+    // Initialize Firebase
+    const firebaseConfig = {
+      databaseURL: "https://lakefront-minesweeper-default-rtdb.firebaseio.com"
+    };
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database(); // This will be used in script.js
+  </script>
 </head>
 <body>
   <div class="app">
@@ -56,6 +59,7 @@
     </footer>
   </div>
 
+  <!-- Your game script -->
   <script src="script.js"></script>
 </body>
 </html>

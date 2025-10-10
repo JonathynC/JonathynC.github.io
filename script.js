@@ -161,14 +161,12 @@ async function saveLastScore(score, won) {
     won
   };
   lastScoreEl.textContent = score + (won ? ' (win)' : ' (loss)');
-  if (score > 0) {
     try {
       await db.ref('scores').push(entry); // Save to Firebase
       renderRemoteLeaderboard();
     } catch (e) {
       console.error('Failed to save score', e);
     }
-  }
 }
 
 document.addEventListener('DOMContentLoaded',()=>{

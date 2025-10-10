@@ -1,4 +1,4 @@
-const remoteLeaderboardUrl = 'https://lakefront-minesweeper-default-rtdb.firebaseio.com/scores';
+// Game settings
 const presets = {
   beginner: { rows: 9, cols: 9, mines: 10, mult: 1 },
   intermediate: { rows: 16, cols: 16, mines: 40, mult: 2 },
@@ -7,17 +7,13 @@ const presets = {
 
 let rows = 9, cols = 9, mines = 10;
 let grid = [];
-let revealedCount = 0;
-let flags = 0;
-let minesLeft = mines;
-let timerInterval = null;
-let timeElapsed = 0;
-let started = false;
-let gameOver = false;
+let revealedCount = 0, flags = 0, minesLeft = mines;
+let timerInterval = null, timeElapsed = 0, started = false, gameOver = false;
 
 // DOM elements
 let gridContainer, minesLeftEl, timerEl, messageEl, startBtn, diffSelect, playerNameInput, lastScoreEl, leaderboardEl;
 
+// Difficulty select
 function setDifficultyFromSelect() {
   const v = diffSelect.value;
   if (v === 'custom') { rows = 12; cols = 12; mines = 20; }
@@ -26,6 +22,7 @@ function setDifficultyFromSelect() {
   minesLeftEl.textContent = minesLeft;
 }
 
+// Start game
 function startGame() {
   setDifficultyFromSelect();
   grid = Array(rows).fill(null).map(() =>
@@ -39,6 +36,7 @@ function startGame() {
   renderGrid();
 }
 
+// Place mines
 function placeMines(safeR, safeC) {
   let placed = 0;
   while (placed < mines) {
@@ -64,29 +62,34 @@ function placeMines(safeR, safeC) {
   }
 }
 
+// Render grid
 function renderGrid() {
   gridContainer.innerHTML = '';
   const gridEl = document.createElement('div');
   gridEl.className = 'grid';
   gridEl.style.gridTemplateColumns = `repeat(${cols},32px)`;
   gridEl.style.gridGap = '2px';
-  for (let r=0;r<rows;r++){
-    for(let c=0;c<cols;c++){
+
+  for (let r=0; r<rows; r++) {
+    for (let c=0; c<cols; c++) {
       const cell = document.createElement('div');
       cell.className = 'cell hidden';
       cell.dataset.r = r;
       cell.dataset.c = c;
       cell.addEventListener('click', onCellClick);
       cell.addEventListener('contextmenu', onCellRightClick);
+
       let pressTimer=null;
       cell.addEventListener('touchstart', e=>{ pressTimer=setTimeout(()=>onCellRightClick(e),600); });
       cell.addEventListener('touchend', ()=>{ if(pressTimer) clearTimeout(pressTimer); });
+
       gridEl.appendChild(cell);
     }
   }
   gridContainer.appendChild(gridEl);
 }
 
+// Cell click
 function onCellClick(e) {
   if(gameOver) return;
   const r=+this.dataset.r, c=+this.dataset.c;
@@ -97,30 +100,35 @@ function onCellClick(e) {
   checkWin();
 }
 
+// Right-click / flag
 function onCellRightClick(e) {
   e.preventDefault();
   if(gameOver) return;
-  const target = e.currentTarget||e.target;
-  const r=+target.dataset.r, c=+target.dataset.c;
+  const target = e.currentTarget || e.target;
+  const r = +target.dataset.r, c = +target.dataset.c;
   const cell = grid[r][c];
   if(!started){ placeMines(r,c); started=true; startTimer(); }
   if(cell.revealed) return;
+
   cell.flag = !cell.flag;
-  if(cell.flag){ target.classList.remove('hidden'); target.classList.add('flag'); target.textContent='⚑'; flags++; minesLeft--; }
+  if(cell.flag) { target.classList.remove('hidden'); target.classList.add('flag'); target.textContent='⚑'; flags++; minesLeft--; }
   else { target.classList.remove('flag'); target.classList.add('hidden'); target.textContent=''; flags--; minesLeft++; }
   minesLeftEl.textContent = minesLeft;
 }
 
-function revealCell(r,c){
+// Reveal cells
+function revealCell(r,c) {
   const cell = grid[r][c];
   if(cell.revealed||cell.flag) return;
   cell.revealed = true; revealedCount++;
   const el = getCellEl(r,c); el.classList.remove('hidden'); el.classList.add('revealed'); el.textContent='';
+
   if(cell.mine){ el.classList.add('mine'); el.textContent='💣'; loseGame(); return; }
   if(cell.adj>0){ el.textContent=cell.adj; el.style.color=numberColor(cell.adj); }
-  else { for(let dr=-1;dr<=1;dr++){ for(let dc=-1;dc<=1;dc++){ const nr=r+dr,nc=c+dc; if(nr<0||nc<0||nr>=rows||nc>=cols) continue; if(!grid[nr][nc].revealed) revealCell(nr,nc); } } }
+  else { for(let dr=-1; dr<=1; dr++){ for(let dc=-1; dc<=1; dc++){ const nr=r+dr, nc=c+dc; if(nr<0||nc<0||nr>=rows||nc>=cols) continue; if(!grid[nr][nc].revealed) revealCell(nr,nc); } } }
 }
 
+// Helpers
 function numberColor(n){ const colors=['#1e90ff','#10b981','#f59e0b','#ef4444','#7c3aed','#db2777','#14b8a6','#64748b']; return colors[(n-1)%colors.length]; }
 function getCellEl(r,c){ const gridEl=gridContainer.querySelector('.grid'); return gridEl.children[r*cols+c]; }
 function startTimer(){ timerInterval=setInterval(()=>{ timeElapsed++; timerEl.textContent=timeElapsed; },1000); }
@@ -129,63 +137,45 @@ function revealAllMines(){ for(let r=0;r<rows;r++){ for(let c=0;c<cols;c++){ if(
 function checkWin(){ const totalSafe=rows*cols-mines; if(revealedCount>=totalSafe){ gameOver=true; clearInterval(timerInterval); messageEl.style.color='var(--success)'; messageEl.textContent='You cleared the board — you win!'; const score=computeScore(); saveLastScore(score,true); } }
 function computeScore(){ const diff=diffSelect.value; const mult=presets[diff]?.mult||1; const base=(rows*cols-mines)*50; const timeFactor=Math.max(1,1+(300-timeElapsed)/300); return Math.round(base*mult*timeFactor); }
 
+// --- Firebase Leaderboard ---
 async function renderRemoteLeaderboard() {
   try {
     const snapshot = await db.ref('scores').once('value');
     const data = snapshot.val() ? Object.values(snapshot.val()) : [];
-    const ol = document.createElement('ol');
     data.sort((a,b)=>b.score-a.score); // highest first
+
+    const ol = document.createElement('ol');
     data.forEach(it => {
       const li = document.createElement('li');
       li.textContent = `${it.name} — ${it.score} pts — ${it.difficulty} — ${new Date(it.date).toLocaleString()}`;
       ol.appendChild(li);
     });
+
     leaderboardEl.innerHTML = '';
     leaderboardEl.appendChild(ol);
   } catch (e) {
     leaderboardEl.innerHTML = '<div style="color:var(--muted)">Unable to load leaderboard.</div>';
-    console.error(e);
+    console.error('Leaderboard error:', e);
   }
 }
 
 async function saveLastScore(score, won) {
   const name = (playerNameInput.value || 'Anonymous').slice(0, 20);
   const entry = {
-    name,
-    score,
-    time: timeElapsed,
-    rows,
-    cols,
-    mines,
-    difficulty: diffSelect.value,
-    date: new Date().toISOString(),
-    won
+    name, score, time: timeElapsed, rows, cols, mines,
+    difficulty: diffSelect.value, date: new Date().toISOString(), won
   };
   lastScoreEl.textContent = score + (won ? ' (win)' : ' (loss)');
-    try {
-      await db.ref('scores').push(entry); // Save to Firebase
-      renderRemoteLeaderboard();
-    } catch (e) {
-      console.error('Failed to save score', e);
-    }
+
+  try {
+    await db.ref('scores').push(entry); // Save score
+    renderRemoteLeaderboard();
+  } catch (e) {
+    console.error('Failed to save score', e);
+  }
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
+// --- Initialize ---
+document.addEventListener('DOMContentLoaded', () => {
   gridContainer = document.getElementById('gridContainer');
-  minesLeftEl = document.getElementById('minesLeft');
-  timerEl = document.getElementById('timer');
-  messageEl = document.getElementById('message');
-  startBtn = document.getElementById('startBtn');
-  diffSelect = document.getElementById('difficulty');
-  playerNameInput = document.getElementById('playerName');
-  lastScoreEl = document.getElementById('lastScore');
-  leaderboardEl = document.getElementById('leaderboard');
-
-  startBtn.addEventListener('click', ()=>startGame());
-  diffSelect.addEventListener('change', ()=>{ setDifficultyFromSelect(); startGame(); });
-  document.addEventListener('keydown', (e)=>{ if(e.key.toLowerCase()==='r') startGame(); });
-
-  setDifficultyFromSelect();
-  startGame();
-  renderRemoteLeaderboard();
-});
+  minesLeftEl = document.getElementBy

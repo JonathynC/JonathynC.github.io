@@ -6,6 +6,14 @@
   <title>Minesweeper</title>
   <script src="https://www.gstatic.com/firebasejs/10.18.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.18.0/firebase-database-compat.js"></script>
+  <script>
+  // Initialize Firebase
+  const firebaseConfig = {
+    databaseURL: "https://lakefront-minesweeper-default-rtdb.firebaseio.com/"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+</script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>

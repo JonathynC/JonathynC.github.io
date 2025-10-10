@@ -194,4 +194,15 @@ document.addEventListener('DOMContentLoaded', () => {
   setDifficultyFromSelect();
   startGame();
   renderRemoteLeaderboard();
+  db.ref('scores').push({
+  name: 'Test Player',
+  score: 123,
+  difficulty: 'beginner',
+  date: new Date().toISOString(),
+  won: true,
+  time: 10,
+  rows: 9,
+  cols: 9,
+  mines: 10
+}).then(()=>console.log('Dummy score added'));
 });

@@ -152,15 +152,15 @@ async function saveLastScore(score,won){
 let gridContainer, minesLeftEl, timerEl, messageEl, startBtn, diffSelect, playerNameInput, lastScoreEl, leaderboardEl;
 
 document.addEventListener('DOMContentLoaded',()=>{
-  const gridContainer=document.getElementById('gridContainer');
-  const minesLeftEl=document.getElementById('minesLeft');
-  const timerEl=document.getElementById('timer');
-  const messageEl=document.getElementById('message');
-  const startBtn=document.getElementById('startBtn');
-  const diffSelect=document.getElementById('difficulty');
-  const playerNameInput=document.getElementById('playerName');
-  const lastScoreEl=document.getElementById('lastScore');
-  const leaderboardEl=document.getElementById('leaderboard');
+  gridContainer=document.getElementById('gridContainer');
+  minesLeftEl=document.getElementById('minesLeft');
+  timerEl=document.getElementById('timer');
+  messageEl=document.getElementById('message');
+  startBtn=document.getElementById('startBtn');
+  diffSelect=document.getElementById('difficulty');
+  playerNameInput=document.getElementById('playerName');
+  lastScoreEl=document.getElementById('lastScore');
+  leaderboardEl=document.getElementById('leaderboard');
 
   startBtn.addEventListener('click',()=>startGame());
   diffSelect.addEventListener('change',()=>{ setDifficultyFromSelect(); startGame(); });

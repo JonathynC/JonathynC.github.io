@@ -1,48 +1,3 @@
-<style>
-  .grid {
-    display: grid;
-  }
-
-  .cell {
-    width: 32px;
-    height: 32px;
-    border: 1px solid #555;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    user-select: none;
-    cursor: pointer;
-  }
-
-  .hidden { background-color: #888; }
-  .revealed { background-color: #ddd; }
-  .flag { background-color: #fbb; }
-  .mine { background-color: #f44; }
-</style>
-
-<div>
-  <div>
-    <label>Player: <input id="playerName" /></label>
-    <label>Difficulty: 
-      <select id="difficulty">
-        <option value="beginner">Beginner</option>
-        <option value="intermediate">Intermediate</option>
-        <option value="expert">Expert</option>
-        <option value="custom">Custom</option>
-      </select>
-    </label>
-    <button id="startBtn">Start</button>
-  </div>
-  <div>Mines Left: <span id="minesLeft">0</span></div>
-  <div>Time: <span id="timer">0</span></div>
-  <div id="message"></div>
-  <div id="gridContainer"></div>
-  <div>Last Score: <span id="lastScore"></span></div>
-  <div id="leaderboard"></div>
-</div>
-
-<script>
 const remoteLeaderboardUrl = 'https://minesweeper-leaderboard.glitch.me/scores';
 const presets = {
   beginner: { rows: 9, cols: 9, mines: 10, mult: 1 },
@@ -204,7 +159,6 @@ async function saveLastScore(score,won){
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
-  // Assign DOM elements (no const/let)
   gridContainer = document.getElementById('gridContainer');
   minesLeftEl = document.getElementById('minesLeft');
   timerEl = document.getElementById('timer');
@@ -223,4 +177,3 @@ document.addEventListener('DOMContentLoaded',()=>{
   startGame();
   renderRemoteLeaderboard();
 });
-</script>

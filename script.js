@@ -165,9 +165,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   startBtn.addEventListener('click',()=>startGame());
   diffSelect.addEventListener('change',()=>{ setDifficultyFromSelect(); startGame(); });
 
+   document.addEventListener('keydown',(e)=>{ if(e.key.toLowerCase()==='r') startGame(); });
+
   setDifficultyFromSelect();
   startGame();
   renderRemoteLeaderboard();
-
-  document.addEventListener('keydown',(e)=>{ if(e.key.toLowerCase()==='r') startGame(); });
 });

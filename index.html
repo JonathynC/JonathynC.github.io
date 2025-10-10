@@ -1,23 +1,25 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Lakefront Minesweeper</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minesweeper</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
     <header>
-      <h1>Lakefront Minesweeper</h1>
+      <h1>Minesweeper</h1>
       <div class="controls">
-        <input id="playerName" type="text" placeholder="Your name" maxlength="20">
-        <select id="difficulty">
-          <option value="beginner">Beginner (9x9, 10 mines)</option>
-          <option value="intermediate">Intermediate (16x16, 40 mines)</option>
-          <option value="expert">Expert (16x30, 99 mines)</option>
-          <option value="custom">Custom</option>
-        </select>
+        <label>Player: <input id="playerName" /></label>
+        <label>Difficulty: 
+          <select id="difficulty">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="expert">Expert</option>
+            <option value="custom">Custom</option>
+          </select>
+        </label>
         <button id="startBtn">Start</button>
       </div>
     </header>
@@ -25,31 +27,23 @@
     <main>
       <div class="board-wrap">
         <div class="status">
-          <div>Mines: <span id="minesLeft">0</span></div>
-          <div>Time: <span id="timer">0</span>s</div>
-          <div id="message" style="color:var(--muted)"></div>
+          <div>Mines Left: <span id="minesLeft">0</span></div>
+          <div>Time: <span id="timer">0</span></div>
         </div>
+        <div id="message"></div>
         <div id="gridContainer"></div>
-        <footer>Left click to reveal — Right click to flag. Long-press on mobile to flag.</footer>
+        <div>Last Score: <span id="lastScore"></span></div>
       </div>
 
-      <aside class="sidebar">
-        <div><strong>Score & Leaderboard</strong></div>
-        <p style="color:var(--muted);font-size:13px">Your top local high scores are stored in your browser. To share a public leaderboard you'll need to configure a server (instructions below).</p>
-        <div style="margin-top:8px">
-          <div><label>Last score: </label><span id="lastScore">—</span></div>
-          <div style="margin-top:6px"><label>Top local:</label>
-            <div class="leaderboard" id="leaderboard"></div>
-          </div>
-        </div>
-
-        <hr style="margin:10px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
-        <div>
-          <strong>Optional public leaderboard</strong>
-          <p style="color:var(--muted);font-size:13px">If you host a simple endpoint that accepts POST /scores and GET /scores.json (CORS enabled), the game can push and fetch global highs. See code comments in the file for details.</p>
-        </div>
-      </aside>
+      <div class="sidebar">
+        <h3>Leaderboard</h3>
+        <div id="leaderboard" class="leaderboard"></div>
+      </div>
     </main>
+
+    <footer>
+      Minesweeper Game
+    </footer>
   </div>
 
   <script src="script.js"></script>

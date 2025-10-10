@@ -1,4 +1,3 @@
-const remoteLeaderboardUrl = 'https://minesweeper-leaderboard.glitch.me/scores';
 const presets = {
   beginner: { rows: 9, cols: 9, mines: 10, mult: 1 },
   intermediate: { rows: 16, cols: 16, mines: 40, mult: 2 },
@@ -129,32 +128,46 @@ function revealAllMines(){ for(let r=0;r<rows;r++){ for(let c=0;c<cols;c++){ if(
 function checkWin(){ const totalSafe=rows*cols-mines; if(revealedCount>=totalSafe){ gameOver=true; clearInterval(timerInterval); messageEl.style.color='var(--success)'; messageEl.textContent='You cleared the board — you win!'; const score=computeScore(); saveLastScore(score,true); } }
 function computeScore(){ const diff=diffSelect.value; const mult=presets[diff]?.mult||1; const base=(rows*cols-mines)*50; const timeFactor=Math.max(1,1+(300-timeElapsed)/300); return Math.round(base*mult*timeFactor); }
 
-async function renderRemoteLeaderboard(){
-  try{
-    const res = await fetch(remoteLeaderboardUrl);
-    if(!res.ok) throw new Error('Bad response');
-    const data = await res.json();
+async function renderRemoteLeaderboard() {
+  try {
+    const snapshot = await db.ref('scores').once('value');
+    const data = snapshot.val() ? Object.values(snapshot.val()) : [];
     const ol = document.createElement('ol');
-    data.forEach(it=>{
-      const li=document.createElement('li');
-      li.textContent=`${it.name} — ${it.score} pts — ${it.difficulty} — ${new Date(it.date).toLocaleString()}`;
+    data.sort((a,b)=>b.score-a.score); // highest first
+    data.forEach(it => {
+      const li = document.createElement('li');
+      li.textContent = `${it.name} — ${it.score} pts — ${it.difficulty} — ${new Date(it.date).toLocaleString()}`;
       ol.appendChild(li);
     });
-    leaderboardEl.innerHTML=''; leaderboardEl.appendChild(ol);
-  }catch(e){
-    leaderboardEl.innerHTML='<div style="color:var(--muted)">Unable to load leaderboard.</div>';
+    leaderboardEl.innerHTML = '';
+    leaderboardEl.appendChild(ol);
+  } catch (e) {
+    leaderboardEl.innerHTML = '<div style="color:var(--muted)">Unable to load leaderboard.</div>';
+    console.error(e);
   }
 }
 
-async function saveLastScore(score,won){
-  const name=(playerNameInput.value||'Anonymous').slice(0,20);
-  const entry={ name, score, time:timeElapsed, rows, cols, mines, difficulty:diffSelect.value, date:new Date().toISOString(), won };
-  lastScoreEl.textContent=score+(won?' (win)':' (loss)');
-  if(remoteLeaderboardUrl && score>0){
-    try{
-      await fetch(remoteLeaderboardUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)});
+async function saveLastScore(score, won) {
+  const name = (playerNameInput.value || 'Anonymous').slice(0, 20);
+  const entry = {
+    name,
+    score,
+    time: timeElapsed,
+    rows,
+    cols,
+    mines,
+    difficulty: diffSelect.value,
+    date: new Date().toISOString(),
+    won
+  };
+  lastScoreEl.textContent = score + (won ? ' (win)' : ' (loss)');
+  if (score > 0) {
+    try {
+      await db.ref('scores').push(entry); // Save to Firebase
       renderRemoteLeaderboard();
-    }catch(e){ console.error('Failed to post score to remote leaderboard', e); }
+    } catch (e) {
+      console.error('Failed to save score', e);
+    }
   }
 }
 

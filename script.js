@@ -1,3 +1,4 @@
+const remoteLeaderboardUrl = 'https://lakefront-minesweeper-default-rtdb.firebaseio.com/scores';
 const presets = {
   beginner: { rows: 9, cols: 9, mines: 10, mult: 1 },
   intermediate: { rows: 16, cols: 16, mines: 40, mult: 2 },

@@ -1,5 +1,6 @@
 // ======= Configuration =======
-const remoteLeaderboardUrl = null; // e.g. 'https://yourdomain.com/scores'
+const remoteLeaderboardUrl = 'https://minesweeper-leaderboard.glitch.me/scores';
+; // e.g. 'https://yourdomain.com/scores'
 
 // ======= Presets =======
 const presets = {
@@ -18,6 +19,68 @@ let timeElapsed = 0;
 let started = false;
 let gameOver = false;
 
+async function renderRemoteLeaderboard() {
+  const leaderboardEl = document.getElementById('leaderboard');
+  try {
+    const res = await fetch(remoteLeaderboardUrl);
+    if (!res.ok) throw new Error('Bad response');
+    const data = await res.json();
+
+    const ol = document.createElement('ol');
+    data.forEach(it => {
+      const li = document.createElement('li');
+      li.textContent = `${it.name} — ${it.score} pts — ${it.difficulty} — ${new Date(it.date).toLocaleString()}`;
+      ol.appendChild(li);
+    });
+
+    leaderboardEl.innerHTML = '';
+    leaderboardEl.appendChild(ol);
+  } catch (e) {
+    leaderboardEl.innerHTML = '<div style="color:var(--muted)">Unable to load leaderboard.</div>';
+  }
+}
+
+async function saveLastScore(score, won) {
+  const name = (playerNameInput.value || 'Anonymous').slice(0, 20);
+  const entry = {
+    name,
+    score,
+    time: timeElapsed,
+    rows,
+    cols,
+    mines,
+    difficulty: diffSelect.value,
+    date: new Date().toISOString(),
+    won
+  };
+
+  // update local display
+  lastScoreEl.textContent = score + (won ? ' (win)' : ' (loss)');
+
+  // save locally
+  if (score > 0) {
+    const list = loadLocalLeaderboard();
+    list.push(entry);
+    list.sort((a, b) => b.score - a.score);
+    saveLocalLeaderboard(list.slice(0, 50));
+    renderLocalLeaderboard();
+  }
+
+  // post to remote leaderboard
+  if (remoteLeaderboardUrl && score > 0) {
+    try {
+      await fetch(remoteLeaderboardUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry)
+      });
+      // refresh public leaderboard after posting
+      renderRemoteLeaderboard();
+    } catch (e) {
+      console.error('Failed to post score to remote leaderboard', e);
+    }
+  }
+}
 document.addEventListener('DOMContentLoaded', () => {
   // ======= Elements =======
   const gridContainer = document.getElementById('gridContainer');
@@ -50,24 +113,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // ======= Init =======
   setDifficultyFromSelect();
   startGame();
-  renderLocalLeaderboard();
+  renderRemoteLeaderboard();
 
   if (remoteLeaderboardUrl) {
-    (async () => {
-      try {
-        const res = await fetch(remoteLeaderboardUrl);
-        if (res.ok) {
-          const data = await res.json();
-          const local = loadLocalLeaderboard();
-          const merged = (data || []).concat(local);
-          merged.sort((a, b) => b.score - a.score);
-          saveLocalLeaderboard(merged.slice(0, 50));
-          renderLocalLeaderboard();
-        }
-      } catch (e) {}
-    })();
+    renderRemoteLeaderboard();
   }
-
+  
   document.addEventListener('keydown', (e) => {
     if (e.key.toLowerCase() === 'r') startGame();
   });

@@ -193,16 +193,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setDifficultyFromSelect();
   startGame();
-   db.ref('scores').push({
-  name: 'Test Player',
-  score: 123,
-  difficulty: 'beginner',
-  date: new Date().toISOString(),
-  won: true,
-  time: 10,
-  rows: 9,
-  cols: 9,
-  mines: 10
-}).then(()=>console.log('Dummy score added'));
+  try {
+    await db.ref('scores').push({
+      name: 'Test Player',
+      score: 123,
+      difficulty: 'beginner',
+      date: new Date().toISOString(),
+      won: true,
+      time: 10,
+      rows: 9,
+      cols: 9,
+      mines: 10
+    });
+    console.log('Dummy score added');
+  } catch(e) {
+    console.error('Failed to add dummy score', e);
+  }
   renderRemoteLeaderboard();
 });

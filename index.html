@@ -8,8 +8,7 @@
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.15.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.15.0/firebase-database-compat.js"></script>
-
+  <script src="https://www.gstatic.com/firebasejs/10.15.0/firebase-database-compat.js"></script>
 
   <script>
     // Initialize Firebase
@@ -17,7 +16,7 @@
       databaseURL: "https://lakefront-minesweeper-default-rtdb.firebaseio.com"
     };
     const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database(); // This will be used in script.js
+    window.db = firebase.database(); // Make db global
   </script>
 </head>
 <body>
@@ -61,6 +60,6 @@
   </div>
 
   <!-- Your game script -->
-  <script src="script.js"></script>
+  <script src="script.js" defer></script>
 </body>
 </html>

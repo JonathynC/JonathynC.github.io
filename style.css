@@ -89,10 +89,14 @@ main {
   margin-bottom: 8px;
 }
 
+/* ✅ Make sure the grid is visible */
 .grid {
-  display: inline-grid;
-  border-radius: 6px;
-  user-select: none;
+  display: grid;
+  grid-gap: 2px;
+  justify-content: center;
+  margin: 10px auto;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
 }
 
 .cell {
@@ -101,13 +105,14 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255,255,255,0.03);
-  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.15));
+  border: 1px solid rgba(255,255,255,0.1);
   font-weight: 700;
+  font-size: 16px;
 }
 
+/* Brighter hidden cell background */
 .cell.hidden {
-  background: linear-gradient(180deg, #0b2238, #031027);
+  background: linear-gradient(180deg, #133a5e, #081a33);
   cursor: pointer;
 }
 

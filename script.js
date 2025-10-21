@@ -67,8 +67,7 @@ function renderGrid() {
   gridContainer.innerHTML = '';
   const gridEl = document.createElement('div');
   gridEl.className = 'grid';
-  gridEl.style.gridTemplateColumns = `repeat(${cols},32px)`;
-  gridEl.style.gridGap = '2px';
+  gridEl.style.gridTemplateColumns = `repeat(${cols}, 32px)`;
 
   for (let r=0; r<rows; r++) {
     for (let c=0; c<cols; c++) {
@@ -132,82 +131,4 @@ function revealCell(r,c) {
 function numberColor(n){ const colors=['#1e90ff','#10b981','#f59e0b','#ef4444','#7c3aed','#db2777','#14b8a6','#64748b']; return colors[(n-1)%colors.length]; }
 function getCellEl(r,c){ const gridEl=gridContainer.querySelector('.grid'); return gridEl.children[r*cols+c]; }
 function startTimer(){ timerInterval=setInterval(()=>{ timeElapsed++; timerEl.textContent=timeElapsed; },1000); }
-function loseGame(){ gameOver=true; clearInterval(timerInterval); revealAllMines(); messageEl.style.color='var(--muted)'; messageEl.textContent='You hit a mine — game over!'; saveLastScore(0,false); }
-function revealAllMines(){ for(let r=0;r<rows;r++){ for(let c=0;c<cols;c++){ if(grid[r][c].mine){ const el=getCellEl(r,c); el.classList.remove('hidden'); el.classList.add('revealed','mine'); el.textContent='💣'; } } } }
-function checkWin(){ const totalSafe=rows*cols-mines; if(revealedCount>=totalSafe){ gameOver=true; clearInterval(timerInterval); messageEl.style.color='var(--success)'; messageEl.textContent='You cleared the board — you win!'; const score=computeScore(); saveLastScore(score,true); } }
-function computeScore(){ const diff=diffSelect.value; const mult=presets[diff]?.mult||1; const base=(rows*cols-mines)*50; const timeFactor=Math.max(1,1+(300-timeElapsed)/300); return Math.round(base*mult*timeFactor); }
-
-// --- Firebase Leaderboard ---
-async function renderRemoteLeaderboard() {
-  try {
-    const snapshot = await db.ref('scores').once('value');
-    const data = snapshot.val() ? Object.values(snapshot.val()) : [];
-    data.sort((a,b)=>b.score-a.score); // highest first
-
-    const ol = document.createElement('ol');
-    data.forEach(it => {
-      const li = document.createElement('li');
-      li.textContent = `${it.name} — ${it.score} pts — ${it.difficulty} — ${new Date(it.date).toLocaleString()}`;
-      ol.appendChild(li);
-    });
-
-    leaderboardEl.innerHTML = '';
-    leaderboardEl.appendChild(ol);
-  } catch (e) {
-    leaderboardEl.innerHTML = '<div style="color:var(--muted)">Unable to load leaderboard.</div>';
-    console.error('Leaderboard error:', e);
-  }
-}
-
-async function saveLastScore(score, won) {
-  const name = (playerNameInput.value || 'Anonymous').slice(0, 20);
-  const entry = {
-    name, score, time: timeElapsed, rows, cols, mines,
-    difficulty: diffSelect.value, date: new Date().toISOString(), won
-  };
-  lastScoreEl.textContent = score + (won ? ' (win)' : ' (loss)');
-
-  try {
-    await db.ref('scores').push(entry); // Save score
-    renderRemoteLeaderboard();
-  } catch (e) {
-    console.error('Failed to save score', e);
-  }
-}
-
-// --- Initialize ---
-document.addEventListener('DOMContentLoaded', () => {
-  gridContainer = document.getElementById('gridContainer');
-  minesLeftEl = document.getElementById('minesLeft');
-  timerEl = document.getElementById('timer');
-  messageEl = document.getElementById('message');
-  startBtn = document.getElementById('startBtn');
-  diffSelect = document.getElementById('difficulty');
-  playerNameInput = document.getElementById('playerName');
-  lastScoreEl = document.getElementById('lastScore');
-  leaderboardEl = document.getElementById('leaderboard');
-
-  startBtn.addEventListener('click', startGame);
-  diffSelect.addEventListener('change', ()=>{ setDifficultyFromSelect(); startGame(); });
-  document.addEventListener('keydown', e=>{ if(e.key.toLowerCase()==='r') startGame(); });
-
-  setDifficultyFromSelect();
-  startGame();
-  try {
-    await db.ref('scores').push({
-      name: 'Test Player',
-      score: 123,
-      difficulty: 'beginner',
-      date: new Date().toISOString(),
-      won: true,
-      time: 10,
-      rows: 9,
-      cols: 9,
-      mines: 10
-    });
-    console.log('Dummy score added');
-  } catch(e) {
-    console.error('Failed to add dummy score', e);
-  }
-  renderRemoteLeaderboard();
-});
+function loseGame(){ gameOve

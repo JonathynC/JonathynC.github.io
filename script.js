@@ -176,7 +176,7 @@ async function saveLastScore(score, won) {
 }
 
 // --- Initialize ---
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   gridContainer = document.getElementById('gridContainer');
   minesLeftEl = document.getElementById('minesLeft');
   timerEl = document.getElementById('timer');

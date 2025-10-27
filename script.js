@@ -215,12 +215,32 @@ function loseGame() {
 }
 
 // --- Check win ---
+// --- Check win ---
 function checkWin() {
+  // If all non-mine cells are revealed
   if (revealedCount === rows * cols - mines) {
     gameOver = true;
     clearInterval(timerInterval);
     messageEl.textContent = "🎉 You Win!";
-    saveScore(playerNameInput.value.trim(), diffSelect.value, timeElapsed);
+    
+    // Save score even if 0
+    const player = playerNameInput.value.trim();
+    const difficulty = diffSelect.value;
+    const time = timeElapsed || 0; // ensure 0 counts
+    saveScore(player, difficulty, time);
+
+    // Optionally reveal all mines visually
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cell = grid[r][c];
+        const el = getCellEl(r, c);
+        if (cell.mine) {
+          el.classList.remove("hidden");
+          el.classList.add("mine");
+          el.textContent = "💣";
+        }
+      }
+    }
   }
 }
 

@@ -176,4 +176,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // Load leaderboard on page load
   loadLeaderboard();
+  setInterval(() => {
+    loadLeaderboard();
+  }, 5000);
 });

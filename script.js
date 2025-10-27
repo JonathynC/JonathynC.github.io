@@ -149,10 +149,40 @@ function loseGame() {
   }
 }
 
+// Save a new score
+async function saveScore(player, difficulty, time) {
+  const { error } = await supabaseClient
+    .from("scores")
+    .insert([{ player_name: player, difficulty, time_seconds: time }]);
+  if (error) console.error("Error saving score:", error);
+}
+
+// Load leaderboard
+async function loadLeaderboard() {
+  const { data, error } = await supabaseClient
+    .from("scores")
+    .select("*")
+    .order("time_seconds", { ascending: true })
+    .limit(10);
+
+  if (error) {
+    console.error("Error loading leaderboard:", error);
+    return;
+  }
+
+  const lb = document.getElementById("leaderboard");
+  lb.innerHTML = data
+    .map((row, i) => `<div>${i + 1}. ${row.player_name} — ${row.time_seconds}s (${row.difficulty})</div>`)
+    .join("");
+}
+
 // Check win
 function checkWin() {
   if (gameOver) return;
   if (revealedCount === rows * cols - mines) {
+    const player = playerNameInput.value || "Anonymous";
+    saveScore(player, diffSelect.value, timeElapsed);
+    loadLeaderboard();
     gameOver = true;
     clearInterval(timerInterval);
     messageEl.textContent = "🎉 You win!";

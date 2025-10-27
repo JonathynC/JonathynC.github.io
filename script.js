@@ -132,3 +132,20 @@ function numberColor(n){ const colors=['#1e90ff','#10b981','#f59e0b','#ef4444','
 function getCellEl(r,c){ const gridEl=gridContainer.querySelector('.grid'); return gridEl.children[r*cols+c]; }
 function startTimer(){ timerInterval=setInterval(()=>{ timeElapsed++; timerEl.textContent=timeElapsed; },1000); }
 function loseGame(){ gameOve
+
+window.addEventListener("DOMContentLoaded", () => {
+  // Grab DOM elements
+  gridContainer = document.getElementById("gridContainer");
+  minesLeftEl = document.getElementById("minesLeft");
+  timerEl = document.getElementById("timer");
+  messageEl = document.getElementById("message");
+  startBtn = document.getElementById("startBtn");
+  diffSelect = document.getElementById("difficulty");
+  playerNameInput = document.getElementById("playerName");
+  lastScoreEl = document.getElementById("lastScore");
+  leaderboardEl = document.getElementById("leaderboard");
+
+  // Attach event
+  startBtn.addEventListener("click", startGame);
+});
+

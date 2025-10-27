@@ -139,20 +139,31 @@ async function saveScore(player, difficulty, time) {
 
 // Load leaderboard
 async function loadLeaderboard() {
-  const { data, error } = await supabaseClient
-    .from("scores")
-    .select("*")
-    .order("time_seconds", { ascending: true })
-    .limit(10);
+  const difficulties = ["beginner", "intermediate", "expert", "custom"];
+  let html = "";
 
-  if (error) {
-    console.error("Error loading leaderboard:", error);
-    return;
+  for (const diff of difficulties) {
+    const { data, error } = await supabaseClient
+      .from("scores")
+      .select("*")
+      .eq("difficulty", diff)
+      .order("time_seconds", { ascending: true })
+      .limit(10);
+
+    if (error) {
+      console.error(`Error loading leaderboard for ${diff}:`, error);
+      continue;
+    }
+
+    if (data.length > 0) {
+      html += `<h4>${diff.charAt(0).toUpperCase() + diff.slice(1)}</h4>`;
+      html += data
+        .map((row, i) => `<div>${i + 1}. ${row.player_name} — ${row.time_seconds}s</div>`)
+        .join("");
+    }
   }
 
-  leaderboardEl.innerHTML = data
-    .map((row, i) => `<div>${i + 1}. ${row.player_name} — ${row.time_seconds}s (${row.difficulty})</div>`)
-    .join("");
+  leaderboardEl.innerHTML = html || "<div>No scores yet.</div>";
 }
 
 // Initialize

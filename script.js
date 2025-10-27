@@ -1,8 +1,8 @@
 // Game settings
 const presets = {
-  beginner: { rows: 9, cols: 9, mines: 10, mult: 1 },
-  intermediate: { rows: 16, cols: 16, mines: 40, mult: 2 },
-  expert: { rows: 16, cols: 30, mines: 99, mult: 3 }
+  beginner: { rows: 9, cols: 9, mines: 10 },
+  intermediate: { rows: 16, cols: 16, mines: 40 },
+  expert: { rows: 16, cols: 30, mines: 99 }
 };
 
 let rows = 9, cols = 9, mines = 10;
@@ -11,10 +11,26 @@ let revealedCount = 0, flags = 0, minesLeft = mines;
 let timerInterval = null, timeElapsed = 0, started = false, gameOver = false;
 
 // DOM elements
-let gridContainer, minesLeftEl, timerEl, messageEl, startBtn, diffSelect, playerNameInput, lastScoreEl, leaderboardEl;
+let gridContainer, minesLeftEl, timerEl, messageEl, startBtn, diffSelect, playerNameInput, leaderboardEl;
 
 // Difficulty select
-setDifficultyFromSelect();
+function setDifficultyFromSelect() {
+  const v = diffSelect.value;
+  if (v === 'custom') { rows = 12; cols = 12; mines = 20; }
+  else { const p = presets[v]; rows = p.rows; cols = p.cols; mines = p.mines; }
+  minesLeft = mines;
+  minesLeftEl.textContent = minesLeft;
+}
+
+// Start game
+function startGame() {
+  const player = playerNameInput.value.trim();
+  if (!player) {
+    messageEl.textContent = "Please enter your name to start!";
+    return;
+  }
+
+  setDifficultyFromSelect();
   grid = Array(rows).fill(null).map(() =>
     Array(cols).fill().map(() => ({ mine: false, adj: 0, revealed: false, flag: false }))
   );
@@ -24,41 +40,6 @@ setDifficultyFromSelect();
   timerEl.textContent = '0';
   minesLeftEl.textContent = minesLeft;
   renderGrid();
-}
-
-// Start game
-function startGame() {
-  const player = playerNameInput.value.trim();
-  if (!player) {
-    messageEl.textContent = "Please enter your name to start!";
-    return;
-  setDifficultyFromSelect();
-}
-
-// Place mines
-function placeMines(safeR, safeC) {
-  let placed = 0;
-  while (placed < mines) {
-    const r = Math.floor(Math.random() * rows);
-    const c = Math.floor(Math.random() * cols);
-    if (grid[r][c].mine) continue;
-    if (Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1) continue;
-    grid[r][c].mine = true; placed++;
-  }
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (grid[r][c].mine) continue;
-      let adj = 0;
-      for (let dr=-1; dr<=1; dr++){
-        for(let dc=-1; dc<=1; dc++){
-          const nr=r+dr, nc=c+dc;
-          if(nr<0||nc<0||nr>=rows||nc>=cols) continue;
-          if(grid[nr][nc].mine) adj++;
-        }
-      }
-      grid[r][c].adj = adj;
-    }
-  }
 }
 
 // Render grid
@@ -77,9 +58,9 @@ function renderGrid() {
       cell.addEventListener('click', onCellClick);
       cell.addEventListener('contextmenu', onCellRightClick);
 
-      let pressTimer=null;
-      cell.addEventListener('touchstart', e=>{ pressTimer=setTimeout(()=>onCellRightClick(e),600); });
-      cell.addEventListener('touchend', ()=>{ if(pressTimer) clearTimeout(pressTimer); });
+      let pressTimer = null;
+      cell.addEventListener('touchstart', e => { pressTimer = setTimeout(() => onCellRightClick(e), 600); });
+      cell.addEventListener('touchend', () => { if (pressTimer) clearTimeout(pressTimer); });
 
       gridEl.appendChild(cell);
     }
@@ -148,7 +129,7 @@ function loseGame() {
   }
 }
 
-// Save a new score
+// Save score to Supabase
 async function saveScore(player, difficulty, time) {
   const { error } = await supabaseClient
     .from("scores")
@@ -169,27 +150,13 @@ async function loadLeaderboard() {
     return;
   }
 
-  const lb = document.getElementById("leaderboard");
-  lb.innerHTML = data
+  leaderboardEl.innerHTML = data
     .map((row, i) => `<div>${i + 1}. ${row.player_name} — ${row.time_seconds}s (${row.difficulty})</div>`)
     .join("");
 }
 
-// Check win
-function checkWin() {
-  if (gameOver) return;
-  if (revealedCount === rows * cols - mines) {
-    const player = playerNameInput.value || "Anonymous";
-    saveScore(player, diffSelect.value, timeElapsed);
-    loadLeaderboard();
-    gameOver = true;
-    clearInterval(timerInterval);
-    messageEl.textContent = "🎉 You win!";
-  }
-}
-
+// Initialize
 window.addEventListener("DOMContentLoaded", () => {
-  // Grab DOM elements
   gridContainer = document.getElementById("gridContainer");
   minesLeftEl = document.getElementById("minesLeft");
   timerEl = document.getElementById("timer");
@@ -197,19 +164,16 @@ window.addEventListener("DOMContentLoaded", () => {
   startBtn = document.getElementById("startBtn");
   diffSelect = document.getElementById("difficulty");
   playerNameInput = document.getElementById("playerName");
-  lastScoreEl = document.getElementById("lastScore");
   leaderboardEl = document.getElementById("leaderboard");
 
-  // Disable start button until a name is entered
+  // Disable Start until name entered
   startBtn.disabled = true;
   playerNameInput.addEventListener("input", () => {
     startBtn.disabled = playerNameInput.value.trim() === "";
   });
 
-  // Attach event
   startBtn.addEventListener("click", startGame);
 
   // Load leaderboard on page load
   loadLeaderboard();
 });
-

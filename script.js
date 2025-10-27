@@ -98,6 +98,55 @@ function renderGrid() {
   gridContainer.appendChild(gridEl);
 }
 
+function loseGame() {
+  gameOver = true;
+  clearInterval(timerInterval);
+  messageEl.textContent = "💥 Game Over! You hit a mine.";
+
+  // Reveal all mines
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cell = grid[r][c];
+      const el = getCellEl(r, c);
+      if (cell.mine) {
+        el.classList.remove("hidden");
+        el.classList.add("mine");
+        el.textContent = "💣";
+      }
+    }
+  }
+}
+
+// --- Check win ---
+// --- Check win ---
+function checkWin() {
+  // If all non-mine cells are revealed
+  if (revealedCount === rows * cols - mines) {
+    gameOver = true;
+    clearInterval(timerInterval);
+    messageEl.textContent = "🎉 You Win!";
+    
+    // Save score even if 0
+    const player = playerNameInput.value.trim();
+    const difficulty = diffSelect.value;
+    const time = timeElapsed || 0; // ensure 0 counts
+    saveScore(player, difficulty, time);
+
+    // Optionally reveal all mines visually
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cell = grid[r][c];
+        const el = getCellEl(r, c);
+        if (cell.mine) {
+          el.classList.remove("hidden");
+          el.classList.add("mine");
+          el.textContent = "💣";
+        }
+      }
+    }
+  }
+}
+
 // --- Cell click ---
 function onCellClick(e) {
   if (gameOver) return;
@@ -195,54 +244,7 @@ function startTimer() {
   }, 1000);
 }
 
-function loseGame() {
-  gameOver = true;
-  clearInterval(timerInterval);
-  messageEl.textContent = "💥 Game Over! You hit a mine.";
 
-  // Reveal all mines
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const cell = grid[r][c];
-      const el = getCellEl(r, c);
-      if (cell.mine) {
-        el.classList.remove("hidden");
-        el.classList.add("mine");
-        el.textContent = "💣";
-      }
-    }
-  }
-}
-
-// --- Check win ---
-// --- Check win ---
-function checkWin() {
-  // If all non-mine cells are revealed
-  if (revealedCount === rows * cols - mines) {
-    gameOver = true;
-    clearInterval(timerInterval);
-    messageEl.textContent = "🎉 You Win!";
-    
-    // Save score even if 0
-    const player = playerNameInput.value.trim();
-    const difficulty = diffSelect.value;
-    const time = timeElapsed || 0; // ensure 0 counts
-    saveScore(player, difficulty, time);
-
-    // Optionally reveal all mines visually
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const cell = grid[r][c];
-        const el = getCellEl(r, c);
-        if (cell.mine) {
-          el.classList.remove("hidden");
-          el.classList.add("mine");
-          el.textContent = "💣";
-        }
-      }
-    }
-  }
-}
 
 // --- Supabase ---
 async function saveScore(player, difficulty, time) {

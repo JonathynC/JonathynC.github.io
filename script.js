@@ -200,6 +200,7 @@ function loseGame() {
   clearInterval(timerInterval);
   messageEl.textContent = "💥 Game Over! You hit a mine.";
 
+  // Reveal all mines
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const cell = grid[r][c];
@@ -211,6 +212,12 @@ function loseGame() {
       }
     }
   }
+
+  // Save the "loss" score
+  const player = playerNameInput.value.trim();
+  const difficulty = diffSelect.value;
+  const time = timeElapsed || 0;
+  saveScore(player, difficulty, time);
 }
 
 // --- Check win ---

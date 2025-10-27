@@ -242,10 +242,21 @@ function checkWin() {
 
 // --- Supabase ---
 async function saveScore(player, difficulty, time) {
-  const { error } = await supabaseClient
-    .from("scores")
-    .insert([{ player_name: player, difficulty, time_seconds: time }]);
-  if (error) console.error("Error saving score:", error);
+  try {
+    console.log(`Attempting to save score: Player=${player}, Difficulty=${difficulty}, Time=${time}`);
+    
+    const { data, error } = await supabaseClient
+      .from("scores")
+      .insert([{ player_name: player, difficulty: difficulty, time_seconds: time }]);
+
+    if (error) {
+      console.error("Error saving score:", error);
+    } else {
+      console.log("Score saved successfully!", data);
+    }
+  } catch (err) {
+    console.error("Unexpected error saving score:", err);
+  }
 }
 
 async function loadLeaderboard() {

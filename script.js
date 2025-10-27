@@ -131,7 +131,33 @@ function revealCell(r,c) {
 function numberColor(n){ const colors=['#1e90ff','#10b981','#f59e0b','#ef4444','#7c3aed','#db2777','#14b8a6','#64748b']; return colors[(n-1)%colors.length]; }
 function getCellEl(r,c){ const gridEl=gridContainer.querySelector('.grid'); return gridEl.children[r*cols+c]; }
 function startTimer(){ timerInterval=setInterval(()=>{ timeElapsed++; timerEl.textContent=timeElapsed; },1000); }
-function loseGame(){ gameOve
+function loseGame() {
+  gameOver = true;
+  clearInterval(timerInterval);
+  messageEl.textContent = "💥 Game Over! You hit a mine.";
+  // Reveal all mines
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cell = grid[r][c];
+      const el = getCellEl(r, c);
+      if (cell.mine) {
+        el.classList.remove("hidden");
+        el.classList.add("mine");
+        el.textContent = "💣";
+      }
+    }
+  }
+}
+
+// Check win
+function checkWin() {
+  if (gameOver) return;
+  if (revealedCount === rows * cols - mines) {
+    gameOver = true;
+    clearInterval(timerInterval);
+    messageEl.textContent = "🎉 You win!";
+  }
+}
 
 window.addEventListener("DOMContentLoaded", () => {
   // Grab DOM elements

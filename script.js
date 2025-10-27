@@ -68,6 +68,36 @@ function renderGrid() {
   gridContainer.appendChild(gridEl);
 }
 
+// Place mines, avoid first click
+function placeMines(safeR, safeC) {
+  let placed = 0;
+  while (placed < mines) {
+    const r = Math.floor(Math.random() * rows);
+    const c = Math.floor(Math.random() * cols);
+    // Don't place mine on the first clicked cell or its neighbors
+    if (grid[r][c].mine) continue;
+    if (Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1) continue;
+    grid[r][c].mine = true;
+    placed++;
+  }
+
+  // Calculate adjacent mine counts
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (grid[r][c].mine) continue;
+      let adj = 0;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          const nr = r + dr, nc = c + dc;
+          if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) continue;
+          if (grid[nr][nc].mine) adj++;
+        }
+      }
+      grid[r][c].adj = adj;
+    }
+  }
+}
+
 // Cell click
 function onCellClick(e) {
   if(gameOver) return;

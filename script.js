@@ -29,7 +29,7 @@ function placeMines(safeR, safeC) {
     const r = Math.floor(Math.random() * rows);
     const c = Math.floor(Math.random() * cols);
     if (grid[r][c].mine) continue;
-    if (Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1) continue; // don't place near first click
+    if (Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1) continue;
     grid[r][c].mine = true;
     placed++;
   }
@@ -87,6 +87,7 @@ function renderGrid() {
       cell.addEventListener('click', onCellClick);
       cell.addEventListener('contextmenu', onCellRightClick);
 
+      // Touch support for flag
       let pressTimer = null;
       cell.addEventListener('touchstart', e => { pressTimer = setTimeout(() => onCellRightClick(e), 600); });
       cell.addEventListener('touchend', () => { if (pressTimer) clearTimeout(pressTimer); });
@@ -96,55 +97,6 @@ function renderGrid() {
   }
 
   gridContainer.appendChild(gridEl);
-}
-
-function loseGame() {
-  gameOver = true;
-  clearInterval(timerInterval);
-  messageEl.textContent = "💥 Game Over! You hit a mine.";
-
-  // Reveal all mines
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const cell = grid[r][c];
-      const el = getCellEl(r, c);
-      if (cell.mine) {
-        el.classList.remove("hidden");
-        el.classList.add("mine");
-        el.textContent = "💣";
-      }
-    }
-  }
-}
-
-// --- Check win ---
-// --- Check win ---
-function checkWin() {
-  // If all non-mine cells are revealed
-  if (revealedCount === rows * cols - mines) {
-    gameOver = true;
-    clearInterval(timerInterval);
-    messageEl.textContent = "🎉 You Win!";
-    
-    // Save score even if 0
-    const player = playerNameInput.value.trim();
-    const difficulty = diffSelect.value;
-    const time = timeElapsed || 0; // ensure 0 counts
-    saveScore(player, difficulty, time);
-
-    // Optionally reveal all mines visually
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const cell = grid[r][c];
-        const el = getCellEl(r, c);
-        if (cell.mine) {
-          el.classList.remove("hidden");
-          el.classList.add("mine");
-          el.textContent = "💣";
-        }
-      }
-    }
-  }
 }
 
 // --- Cell click ---
@@ -215,7 +167,6 @@ function revealCell(r, c) {
     el.textContent = cell.adj;
     el.style.color = numberColor(cell.adj);
   } else {
-    // Reveal neighbors recursively
     for (let dr = -1; dr <= 1; dr++) {
       for (let dc = -1; dc <= 1; dc++) {
         const nr = r + dr, nc = c + dc;
@@ -244,7 +195,50 @@ function startTimer() {
   }, 1000);
 }
 
+function loseGame() {
+  gameOver = true;
+  clearInterval(timerInterval);
+  messageEl.textContent = "💥 Game Over! You hit a mine.";
 
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cell = grid[r][c];
+      const el = getCellEl(r, c);
+      if (cell.mine) {
+        el.classList.remove("hidden");
+        el.classList.add("mine");
+        el.textContent = "💣";
+      }
+    }
+  }
+}
+
+// --- Check win ---
+function checkWin() {
+  if (revealedCount === rows * cols - mines) {
+    gameOver = true;
+    clearInterval(timerInterval);
+    messageEl.textContent = "🎉 You Win!";
+
+    const player = playerNameInput.value.trim();
+    const difficulty = diffSelect.value;
+    const time = timeElapsed || 0; // save zero if needed
+    saveScore(player, difficulty, time);
+
+    // Reveal all mines visually
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cell = grid[r][c];
+        const el = getCellEl(r, c);
+        if (cell.mine) {
+          el.classList.remove("hidden");
+          el.classList.add("mine");
+          el.textContent = "💣";
+        }
+      }
+    }
+  }
+}
 
 // --- Supabase ---
 async function saveScore(player, difficulty, time) {
@@ -291,7 +285,6 @@ window.addEventListener("DOMContentLoaded", () => {
   playerNameInput = document.getElementById("playerName");
   leaderboardEl = document.getElementById("leaderboard");
 
-  // Disable Start until name entered
   startBtn.disabled = true;
   playerNameInput.addEventListener("input", () => {
     startBtn.disabled = playerNameInput.value.trim() === "";
@@ -299,7 +292,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
   startBtn.addEventListener("click", startGame);
 
-  // Load leaderboard
   loadLeaderboard();
   setInterval(loadLeaderboard, 5000);
 });

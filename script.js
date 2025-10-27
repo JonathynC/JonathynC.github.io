@@ -14,17 +14,7 @@ let timerInterval = null, timeElapsed = 0, started = false, gameOver = false;
 let gridContainer, minesLeftEl, timerEl, messageEl, startBtn, diffSelect, playerNameInput, lastScoreEl, leaderboardEl;
 
 // Difficulty select
-function setDifficultyFromSelect() {
-  const v = diffSelect.value;
-  if (v === 'custom') { rows = 12; cols = 12; mines = 20; }
-  else { const p = presets[v]; rows = p.rows; cols = p.cols; mines = p.mines; }
-  minesLeft = mines;
-  minesLeftEl.textContent = minesLeft;
-}
-
-// Start game
-function startGame() {
-  setDifficultyFromSelect();
+setDifficultyFromSelect();
   grid = Array(rows).fill(null).map(() =>
     Array(cols).fill().map(() => ({ mine: false, adj: 0, revealed: false, flag: false }))
   );
@@ -34,6 +24,15 @@ function startGame() {
   timerEl.textContent = '0';
   minesLeftEl.textContent = minesLeft;
   renderGrid();
+}
+
+// Start game
+function startGame() {
+  const player = playerNameInput.value.trim();
+  if (!player) {
+    messageEl.textContent = "Please enter your name to start!";
+    return;
+  setDifficultyFromSelect();
 }
 
 // Place mines
@@ -201,7 +200,16 @@ window.addEventListener("DOMContentLoaded", () => {
   lastScoreEl = document.getElementById("lastScore");
   leaderboardEl = document.getElementById("leaderboard");
 
+  // Disable start button until a name is entered
+  startBtn.disabled = true;
+  playerNameInput.addEventListener("input", () => {
+    startBtn.disabled = playerNameInput.value.trim() === "";
+  });
+
   // Attach event
   startBtn.addEventListener("click", startGame);
+
+  // Load leaderboard on page load
+  loadLeaderboard();
 });
 

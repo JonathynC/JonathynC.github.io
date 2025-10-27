@@ -1,4 +1,4 @@
-// Game settings
+// --- Game settings ---
 const presets = {
   beginner: { rows: 9, cols: 9, mines: 10 },
   intermediate: { rows: 16, cols: 16, mines: 40 },
@@ -10,10 +10,10 @@ let grid = [];
 let revealedCount = 0, flags = 0, minesLeft = mines;
 let timerInterval = null, timeElapsed = 0, started = false, gameOver = false;
 
-// DOM elements
+// --- DOM elements ---
 let gridContainer, minesLeftEl, timerEl, messageEl, startBtn, diffSelect, playerNameInput, leaderboardEl;
 
-// Difficulty select
+// --- Set difficulty ---
 function setDifficultyFromSelect() {
   const v = diffSelect.value;
   if (v === 'custom') { rows = 12; cols = 12; mines = 20; }
@@ -22,7 +22,36 @@ function setDifficultyFromSelect() {
   minesLeftEl.textContent = minesLeft;
 }
 
-// Start game
+// --- Place mines avoiding first click ---
+function placeMines(safeR, safeC) {
+  let placed = 0;
+  while (placed < mines) {
+    const r = Math.floor(Math.random() * rows);
+    const c = Math.floor(Math.random() * cols);
+    if (grid[r][c].mine) continue;
+    if (Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1) continue; // don't place near first click
+    grid[r][c].mine = true;
+    placed++;
+  }
+
+  // Compute adjacent mine counts
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (grid[r][c].mine) continue;
+      let adj = 0;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          const nr = r + dr, nc = c + dc;
+          if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) continue;
+          if (grid[nr][nc].mine) adj++;
+        }
+      }
+      grid[r][c].adj = adj;
+    }
+  }
+}
+
+// --- Start game ---
 function startGame() {
   const player = playerNameInput.value.trim();
   if (!player) {
@@ -42,15 +71,15 @@ function startGame() {
   renderGrid();
 }
 
-// Render grid
+// --- Render grid ---
 function renderGrid() {
   gridContainer.innerHTML = '';
   const gridEl = document.createElement('div');
   gridEl.className = 'grid';
   gridEl.style.gridTemplateColumns = `repeat(${cols}, 32px)`;
 
-  for (let r=0; r<rows; r++) {
-    for (let c=0; c<cols; c++) {
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
       const cell = document.createElement('div');
       cell.className = 'cell hidden';
       cell.dataset.r = r;
@@ -65,86 +94,112 @@ function renderGrid() {
       gridEl.appendChild(cell);
     }
   }
+
   gridContainer.appendChild(gridEl);
 }
 
-// Place mines, avoid first click
-function placeMines(safeR, safeC) {
-  let placed = 0;
-  while (placed < mines) {
-    const r = Math.floor(Math.random() * rows);
-    const c = Math.floor(Math.random() * cols);
-    // Don't place mine on the first clicked cell or its neighbors
-    if (grid[r][c].mine) continue;
-    if (Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1) continue;
-    grid[r][c].mine = true;
-    placed++;
+// --- Cell click ---
+function onCellClick(e) {
+  if (gameOver) return;
+  const r = +e.currentTarget.dataset.r;
+  const c = +e.currentTarget.dataset.c;
+
+  if (!started) {
+    placeMines(r, c);
+    started = true;
+    startTimer();
   }
 
-  // Calculate adjacent mine counts
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (grid[r][c].mine) continue;
-      let adj = 0;
-      for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-          const nr = r + dr, nc = c + dc;
-          if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) continue;
-          if (grid[nr][nc].mine) adj++;
-        }
+  const cell = grid[r][c];
+  if (cell.revealed || cell.flag) return;
+  revealCell(r, c);
+  checkWin();
+}
+
+// --- Right-click / flag ---
+function onCellRightClick(e) {
+  e.preventDefault();
+  if (gameOver) return;
+  const r = +e.currentTarget.dataset.r;
+  const c = +e.currentTarget.dataset.c;
+  const cell = grid[r][c];
+
+  if (!started) {
+    placeMines(r, c);
+    started = true;
+    startTimer();
+  }
+
+  if (cell.revealed) return;
+
+  cell.flag = !cell.flag;
+  if (cell.flag) {
+    e.currentTarget.classList.remove('hidden');
+    e.currentTarget.classList.add('flag');
+    e.currentTarget.textContent = '⚑';
+    flags++;
+    minesLeft--;
+  } else {
+    e.currentTarget.classList.remove('flag');
+    e.currentTarget.classList.add('hidden');
+    e.currentTarget.textContent = '';
+    flags--;
+    minesLeft++;
+  }
+  minesLeftEl.textContent = minesLeft;
+}
+
+// --- Reveal cells ---
+function revealCell(r, c) {
+  const cell = grid[r][c];
+  if (cell.revealed || cell.flag) return;
+  cell.revealed = true; revealedCount++;
+  const el = getCellEl(r, c); el.classList.remove('hidden'); el.classList.add('revealed'); el.textContent = '';
+
+  if (cell.mine) {
+    el.classList.add('mine'); el.textContent = '💣';
+    loseGame();
+    return;
+  }
+
+  if (cell.adj > 0) {
+    el.textContent = cell.adj;
+    el.style.color = numberColor(cell.adj);
+  } else {
+    // Reveal neighbors recursively
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        const nr = r + dr, nc = c + dc;
+        if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) continue;
+        if (!grid[nr][nc].revealed) revealCell(nr, nc);
       }
-      grid[r][c].adj = adj;
     }
   }
 }
 
-// Cell click
-function onCellClick(e) {
-  if(gameOver) return;
-  const r=+this.dataset.r, c=+this.dataset.c;
-  if(!started){ placeMines(r,c); started=true; startTimer(); }
-  const cell = grid[r][c];
-  if(cell.revealed||cell.flag) return;
-  revealCell(r,c);
-  checkWin();
+// --- Helpers ---
+function numberColor(n) {
+  const colors = ['#1e90ff','#10b981','#f59e0b','#ef4444','#7c3aed','#db2777','#14b8a6','#64748b'];
+  return colors[(n-1) % colors.length];
 }
 
-// Right-click / flag
-function onCellRightClick(e) {
-  e.preventDefault();
-  if(gameOver) return;
-  const target = e.currentTarget || e.target;
-  const r = +target.dataset.r, c = +target.dataset.c;
-  const cell = grid[r][c];
-  if(!started){ placeMines(r,c); started=true; startTimer(); }
-  if(cell.revealed) return;
-
-  cell.flag = !cell.flag;
-  if(cell.flag) { target.classList.remove('hidden'); target.classList.add('flag'); target.textContent='⚑'; flags++; minesLeft--; }
-  else { target.classList.remove('flag'); target.classList.add('hidden'); target.textContent=''; flags--; minesLeft++; }
-  minesLeftEl.textContent = minesLeft;
+function getCellEl(r, c) {
+  const gridEl = gridContainer.querySelector('.grid');
+  return gridEl.children[r * cols + c];
 }
 
-// Reveal cells
-function revealCell(r,c) {
-  const cell = grid[r][c];
-  if(cell.revealed||cell.flag) return;
-  cell.revealed = true; revealedCount++;
-  const el = getCellEl(r,c); el.classList.remove('hidden'); el.classList.add('revealed'); el.textContent='';
-
-  if(cell.mine){ el.classList.add('mine'); el.textContent='💣'; loseGame(); return; }
-  if(cell.adj>0){ el.textContent=cell.adj; el.style.color=numberColor(cell.adj); }
-  else { for(let dr=-1; dr<=1; dr++){ for(let dc=-1; dc<=1; dc++){ const nr=r+dr, nc=c+dc; if(nr<0||nc<0||nr>=rows||nc>=cols) continue; if(!grid[nr][nc].revealed) revealCell(nr,nc); } } }
+function startTimer() {
+  timerInterval = setInterval(() => {
+    timeElapsed++;
+    timerEl.textContent = timeElapsed;
+  }, 1000);
 }
 
-// Helpers
-function numberColor(n){ const colors=['#1e90ff','#10b981','#f59e0b','#ef4444','#7c3aed','#db2777','#14b8a6','#64748b']; return colors[(n-1)%colors.length]; }
-function getCellEl(r,c){ const gridEl=gridContainer.querySelector('.grid'); return gridEl.children[r*cols+c]; }
-function startTimer(){ timerInterval=setInterval(()=>{ timeElapsed++; timerEl.textContent=timeElapsed; },1000); }
 function loseGame() {
   gameOver = true;
   clearInterval(timerInterval);
   messageEl.textContent = "💥 Game Over! You hit a mine.";
+
   // Reveal all mines
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -159,7 +214,17 @@ function loseGame() {
   }
 }
 
-// Save score to Supabase
+// --- Check win ---
+function checkWin() {
+  if (revealedCount === rows * cols - mines) {
+    gameOver = true;
+    clearInterval(timerInterval);
+    messageEl.textContent = "🎉 You Win!";
+    saveScore(playerNameInput.value.trim(), diffSelect.value, timeElapsed);
+  }
+}
+
+// --- Supabase ---
 async function saveScore(player, difficulty, time) {
   const { error } = await supabaseClient
     .from("scores")
@@ -167,7 +232,6 @@ async function saveScore(player, difficulty, time) {
   if (error) console.error("Error saving score:", error);
 }
 
-// Load leaderboard
 async function loadLeaderboard() {
   const difficulties = ["beginner", "intermediate", "expert", "custom"];
   let html = "";
@@ -187,16 +251,14 @@ async function loadLeaderboard() {
 
     if (data.length > 0) {
       html += `<h4>${diff.charAt(0).toUpperCase() + diff.slice(1)}</h4>`;
-      html += data
-        .map((row, i) => `<div>${i + 1}. ${row.player_name} — ${row.time_seconds}s</div>`)
-        .join("");
+      html += data.map((row, i) => `<div>${i + 1}. ${row.player_name} — ${row.time_seconds}s</div>`).join("");
     }
   }
 
   leaderboardEl.innerHTML = html || "<div>No scores yet.</div>";
 }
 
-// Initialize
+// --- Init ---
 window.addEventListener("DOMContentLoaded", () => {
   gridContainer = document.getElementById("gridContainer");
   minesLeftEl = document.getElementById("minesLeft");
@@ -215,9 +277,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   startBtn.addEventListener("click", startGame);
 
-  // Load leaderboard on page load
+  // Load leaderboard
   loadLeaderboard();
-  setInterval(() => {
-    loadLeaderboard();
-  }, 5000);
+  setInterval(loadLeaderboard, 5000);
 });

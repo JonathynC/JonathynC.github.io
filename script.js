@@ -320,10 +320,12 @@ async function loadLeaderboard() {
 
     if (data.length > 0) {
       html += `<h4>${diff.charAt(0).toUpperCase() + diff.slice(1)}</h4>`;
+
       html += data
         .map((row, i) => {
+          // Use 0 for last score time if it's a loss
           const display = row.won ? `${row.time_seconds}s` : "Loss";
-          return `<div>${i + 1}. ${row.player_name} — ${display}</div>`;
+          return `<div>${i + 1}. ${row.player_name} — ${row.difficulty} — ${display}</div>`;
         })
         .join("");
     }
@@ -331,6 +333,7 @@ async function loadLeaderboard() {
 
   leaderboardEl.innerHTML = html || "<div>No scores yet.</div>";
 }
+
 
 // --- Init ---
 window.addEventListener("DOMContentLoaded", () => {

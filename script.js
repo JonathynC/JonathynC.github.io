@@ -11,7 +11,7 @@ let revealedCount = 0, flags = 0, minesLeft = mines;
 let timerInterval = null, timeElapsed = 0, started = false, gameOver = false;
 
 // --- DOM elements ---
-let gridContainer, minesLeftEl, timerEl, messageEl, startBtn, diffSelect, playerNameInput, leaderboardEl;
+let gridContainer, minesLeftEl, timerEl, messageEl, startBtn, diffSelect, playerNameInput, leaderboardEl, lastScoreEl;
 
 // --- Set difficulty ---
 function setDifficultyFromSelect() {
@@ -195,6 +195,12 @@ function startTimer() {
   }, 1000);
 }
 
+// --- Update Last Score Display ---
+function updateLastScoreDisplay(won, time) {
+  lastScoreEl.textContent = won ? `${time}s` : "0";
+}
+
+// --- Lose game ---
 function loseGame() {
   if (gameOver) return;
   gameOver = true;
@@ -214,11 +220,15 @@ function loseGame() {
     }
   }
 
-  // Save the "loss" score
+  // Save the loss
   const player = playerNameInput.value.trim();
   const difficulty = diffSelect.value;
   const time = 0;
-  saveScore(player, difficulty, time, false);
+
+  saveScore(player, difficulty, time, false).then(() => {
+    updateLastScoreDisplay(false, time);
+  });
+
   timerEl.textContent = "0";
 }
 
@@ -231,8 +241,11 @@ function checkWin() {
 
     const player = playerNameInput.value.trim();
     const difficulty = diffSelect.value;
-    const time = timeElapsed || 0; // save zero if needed
-    saveScore(player, difficulty, time, true);
+    const time = timeElapsed;
+
+    saveScore(player, difficulty, time, true).then(() => {
+      updateLastScoreDisplay(true, time);
+    });
 
     // Reveal all mines visually
     for (let r = 0; r < rows; r++) {
@@ -254,48 +267,15 @@ async function saveScore(player, difficulty, time, won = true) {
   try {
     console.log(`Saving score: Player=${player}, Difficulty=${difficulty}, Time=${time}, Won=${won}`);
 
-    // Step 1: Check if player already has a record for this difficulty
-    const { data: existing, error: fetchError } = await supabaseClient
+    const { error } = await supabaseClient
       .from("scores")
-      .select("*")
-      .eq("player_name", player)
-      .eq("difficulty", difficulty)
-      .single();
+      .upsert(
+        { player_name: player, difficulty, time_seconds: time, won },
+        { onConflict: ["player_name", "difficulty"] }
+      );
 
-    if (fetchError && fetchError.code !== "PGRST116") {
-      console.error("Error fetching existing record:", fetchError);
-      return;
-    }
-
-    // Step 2: Decide whether to insert or update
-    if (!existing) {
-      // No record yet → insert
-      const { error } = await supabaseClient
-        .from("scores")
-        .insert([{ player_name: player, difficulty, time_seconds: time, won }]);
-      if (error) console.error("Insert error:", error);
-      else console.log("New score inserted.");
-    } else {
-      // Record exists → compare
-      const prevWon = existing.won;
-      const prevTime = existing.time_seconds;
-
-      const isBetter =
-        (won && !prevWon) ||              // win beats any previous loss
-        (won && prevWon && time < prevTime); // faster win beats slower win
-
-      if (isBetter) {
-        const { error } = await supabaseClient
-          .from("scores")
-          .update({ time_seconds: time, won })
-          .eq("player_name", player)
-          .eq("difficulty", difficulty);
-        if (error) console.error("Update error:", error);
-        else console.log("Existing score updated (better).");
-      } else {
-        console.log("Not updating — existing record is better.");
-      }
-    }
+    if (error) console.error("Upsert error:", error);
+    else console.log("Score saved or updated.");
   } catch (err) {
     console.error("Unexpected error saving score:", err);
   }
@@ -310,7 +290,7 @@ async function loadLeaderboard() {
       .from("scores")
       .select("*")
       .eq("difficulty", diff)
-      .order("won", { ascending: false }) // winners first
+      .order("won", { ascending: false })
       .order("time_seconds", { ascending: true })
       .limit(10);
 
@@ -321,10 +301,8 @@ async function loadLeaderboard() {
 
     if (data.length > 0) {
       html += `<h4>${diff.charAt(0).toUpperCase() + diff.slice(1)}</h4>`;
-
       html += data
         .map((row, i) => {
-          // Use 0 for last score time if it's a loss
           const display = row.won ? `${row.time_seconds}s` : "Loss";
           return `<div>${i + 1}. ${row.player_name} — ${row.difficulty} — ${display}</div>`;
         })
@@ -334,7 +312,6 @@ async function loadLeaderboard() {
 
   leaderboardEl.innerHTML = html || "<div>No scores yet.</div>";
 }
-
 
 // --- Init ---
 window.addEventListener("DOMContentLoaded", () => {
@@ -346,6 +323,7 @@ window.addEventListener("DOMContentLoaded", () => {
   diffSelect = document.getElementById("difficulty");
   playerNameInput = document.getElementById("playerName");
   leaderboardEl = document.getElementById("leaderboard");
+  lastScoreEl = document.getElementById("lastScore");
 
   startBtn.disabled = true;
   playerNameInput.addEventListener("input", () => {

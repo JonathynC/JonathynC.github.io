@@ -217,7 +217,7 @@ function loseGame() {
   const player = playerNameInput.value.trim();
   const difficulty = diffSelect.value;
   const time = timeElapsed || 0;
-  saveScore(player, difficulty, time);
+  saveScore(player, difficulty, time, false);
 }
 
 // --- Check win ---
@@ -230,7 +230,7 @@ function checkWin() {
     const player = playerNameInput.value.trim();
     const difficulty = diffSelect.value;
     const time = timeElapsed || 0; // save zero if needed
-    saveScore(player, difficulty, time);
+    saveScore(player, difficulty, time, true);
 
     // Reveal all mines visually
     for (let r = 0; r < rows; r++) {
@@ -248,18 +248,51 @@ function checkWin() {
 }
 
 // --- Supabase ---
-async function saveScore(player, difficulty, time) {
+async function saveScore(player, difficulty, time, won = true) {
   try {
-    console.log(`Attempting to save score: Player=${player}, Difficulty=${difficulty}, Time=${time}`);
-    
-    const { data, error } = await supabaseClient
-      .from("scores")
-      .insert([{ player_name: player, difficulty: difficulty, time_seconds: time }]);
+    console.log(`Saving score: Player=${player}, Difficulty=${difficulty}, Time=${time}, Won=${won}`);
 
-    if (error) {
-      console.error("Error saving score:", error);
+    // Step 1: Check if player already has a record for this difficulty
+    const { data: existing, error: fetchError } = await supabaseClient
+      .from("scores")
+      .select("*")
+      .eq("player_name", player)
+      .eq("difficulty", difficulty)
+      .single();
+
+    if (fetchError && fetchError.code !== "PGRST116") {
+      console.error("Error fetching existing record:", fetchError);
+      return;
+    }
+
+    // Step 2: Decide whether to insert or update
+    if (!existing) {
+      // No record yet → insert
+      const { error } = await supabaseClient
+        .from("scores")
+        .insert([{ player_name: player, difficulty, time_seconds: time, won }]);
+      if (error) console.error("Insert error:", error);
+      else console.log("New score inserted.");
     } else {
-      console.log("Score saved successfully!", data);
+      // Record exists → compare
+      const prevWon = existing.won;
+      const prevTime = existing.time_seconds;
+
+      const isBetter =
+        (won && !prevWon) ||              // win beats any previous loss
+        (won && prevWon && time < prevTime); // faster win beats slower win
+
+      if (isBetter) {
+        const { error } = await supabaseClient
+          .from("scores")
+          .update({ time_seconds: time, won })
+          .eq("player_name", player)
+          .eq("difficulty", difficulty);
+        if (error) console.error("Update error:", error);
+        else console.log("Existing score updated (better).");
+      } else {
+        console.log("Not updating — existing record is better.");
+      }
     }
   } catch (err) {
     console.error("Unexpected error saving score:", err);
@@ -275,6 +308,7 @@ async function loadLeaderboard() {
       .from("scores")
       .select("*")
       .eq("difficulty", diff)
+      .order("won", { ascending: false }) // winners first
       .order("time_seconds", { ascending: true })
       .limit(10);
 
@@ -285,7 +319,12 @@ async function loadLeaderboard() {
 
     if (data.length > 0) {
       html += `<h4>${diff.charAt(0).toUpperCase() + diff.slice(1)}</h4>`;
-      html += data.map((row, i) => `<div>${i + 1}. ${row.player_name} — ${row.time_seconds}s</div>`).join("");
+      html += data
+        .map((row, i) => {
+          const display = row.won ? `${row.time_seconds}s` : "Loss";
+          return `<div>${i + 1}. ${row.player_name} — ${display}</div>`;
+        })
+        .join("");
     }
   }
 

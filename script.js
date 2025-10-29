@@ -196,6 +196,7 @@ function startTimer() {
 }
 
 function loseGame() {
+  if (gameOver) return;
   gameOver = true;
   clearInterval(timerInterval);
   messageEl.textContent = "💥 Game Over! You hit a mine.";

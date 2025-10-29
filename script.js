@@ -217,8 +217,9 @@ function loseGame() {
   // Save the "loss" score
   const player = playerNameInput.value.trim();
   const difficulty = diffSelect.value;
-  const time = timeElapsed || 0;
+  const time = 0;
   saveScore(player, difficulty, time, false);
+  timerEl.textContent = "0";
 }
 
 // --- Check win ---

@@ -11,7 +11,7 @@
 <script>
   const SUPABASE_URL = "https://hfxpaveruppfacmsswld.supabase.co";
   const SUPABASE_KEY = "sb_publishable_KcWYHeT--j7N_ZjmHyTTBg_FKPHthQx";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   window.supabaseClient = supabase; // make global for use in script.js
 </script>
 </head>
@@ -55,7 +55,13 @@
     </footer>
   </div>
 
-  <!-- Your game script -->
+  <!-- Your game script 
+  <script src="script.js" defer></script>-->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.supabaseClient = window.supabase.createClient("URL","KEY");
+  </script>
   <script src="script.js" defer></script>
+
 </body>
 </html>

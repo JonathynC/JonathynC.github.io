@@ -53,16 +53,10 @@ function placeMines(safeR, safeC) {
 
 // --- Start game ---
 function startGame() {
-  gridContainer.innerHTML = "";
   const player = playerNameInput.value.trim();
   if (!player) {
     messageEl.textContent = "Please enter your name to start!";
     return;
-    }
-  clearInterval(timerInterval);
-  timerInterval = null;
-  timeElapsed = 0;
-  timerEl.textContent = "0";
   }
 
   setDifficultyFromSelect();
@@ -195,7 +189,6 @@ function getCellEl(r, c) {
 }
 
 function startTimer() {
-  if (timerInterval) return;
   timerInterval = setInterval(() => {
     timeElapsed++;
     timerEl.textContent = timeElapsed;
@@ -332,35 +325,13 @@ window.addEventListener("DOMContentLoaded", () => {
   leaderboardEl = document.getElementById("leaderboard");
   lastScoreEl = document.getElementById("lastScore");
 
-  //startBtn.disabled = true;
-  //playerNameInput.addEventListener("input", () => {
-    //startBtn.disabled = playerNameInput.value.trim() === "";
-  function syncStartButton() {
-  startBtn.disabled = playerNameInput.value.trim() === "";
-}
-
-// Initial check (handles browser autofill)
-syncStartButton();
-
-// Update on input
-playerNameInput.addEventListener("input", syncStartButton);
-
+  startBtn.disabled = true;
+  playerNameInput.addEventListener("input", () => {
+    startBtn.disabled = playerNameInput.value.trim() === "";
   });
 
   startBtn.addEventListener("click", startGame);
 
-  //loadLeaderboard();
-  //setInterval(loadLeaderboard, 5000);
-async function safeLoadLeaderboard() {
-  if (!window.supabaseClient) return;
-  await loadLeaderboard();
-}
-
-// Initial load
-safeLoadLeaderboard();
-
-// Refresh every 5 seconds
-setInterval(safeLoadLeaderboard, 5000);
-
-
+  loadLeaderboard();
+  setInterval(loadLeaderboard, 5000);
 });
